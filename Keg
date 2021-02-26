@@ -1,0 +1,9 @@
+;; Keg
+
+(source gnu melpa)
+
+(package
+ (denops
+  (recipe . (denops :fetcher github :repo "conao3/denops.el"))))
+
+(dev-dependency cort)
