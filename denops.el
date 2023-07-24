@@ -5,7 +5,7 @@
 ;; Author: Naoya Yamashita <conao3@gmail.com>
 ;; Version: 0.0.1
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "26.1") (json-rpc-server "0.2"))
+;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/conao3/denops.el
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -27,8 +27,6 @@
 
 
 ;;; Code:
-
-(require 'json-rpc-server)
 
 (defgroup denops nil
   "Write package in Deno."
