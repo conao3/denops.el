@@ -70,16 +70,17 @@
   "Start denops server."
   (interactive)
   (setq denops--buffer (get-buffer-create "*denops*"))
-  (setq denops--process
-        (make-network-process
-         :name "denops"
-         :buffer denops--buffer
-         :host denops-server-host
-         :service denops-server-port
-         :family 'ipv4
-         :filter #'denops--process-filter
-         :sentinel #'denops--process-sentinel))
-  (denops--logging "start denops server"))
+  (unless (process-live-p denops--process)
+    (setq denops--process
+          (make-network-process
+           :name "denops"
+           :buffer denops--buffer
+           :host denops-server-host
+           :service denops-server-port
+           :family 'ipv4
+           :filter #'denops--process-filter
+           :sentinel #'denops--process-sentinel))
+    (denops--logging "start denops server"))
   denops--buffer)
 
 (provide 'denops)
