@@ -42,9 +42,25 @@
   "Denops server port."
   :type 'integer)
 
+(defcustom denops-load-path (list (locate-user-emacs-file "denops"))
+  "Denops load path."
+  :type '(repeat directory))
+
 (defvar denops--buffer nil)
 (defvar denops--process nil)
 (defvar denops--msgid 0)
+
+(defun denops--gather-plugins ()
+  "Gather plugins."
+  (let (res)
+    (dolist (dir denops-load-path)
+      (dolist (file (when (file-directory-p dir)
+                      (directory-files-recursively dir "main.ts")))
+        (save-match-data
+          (when (string-match "/denops/\\([^/]*\\)/main.ts$" file)
+            (let ((plugin (match-string 1 file)))
+              (push (cons plugin file) res))))))
+    (nreverse res)))
 
 (defun denops--logging (msg)
   "Logging MSG."
