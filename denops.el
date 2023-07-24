@@ -28,6 +28,8 @@
 
 ;;; Code:
 
+(require 'denops-json)
+
 (defgroup denops nil
   "Write package in Deno."
   :group 'convenience
@@ -54,13 +56,27 @@
   "Gather plugins."
   (let (res)
     (dolist (dir denops-load-path)
-      (dolist (file (when (file-directory-p dir)
-                      (directory-files-recursively dir "main.ts")))
+      (dolist (script (when (file-directory-p dir)
+                        (directory-files-recursively dir "main.ts")))
         (save-match-data
-          (when (string-match "/denops/\\([^/]*\\)/main.ts$" file)
-            (let ((plugin (match-string 1 file)))
-              (push (cons plugin file) res))))))
+          (when (string-match "/denops/\\([^/]*\\)/main.ts$" script)
+            (let ((plugin (match-string 1 script)))
+              (push (cons plugin (file-truename script)) res))))))
     (nreverse res)))
+
+(defun denops--register (plugin script)
+  "Register PLUGIN with SCRIPT."
+  (denops--send-notify
+   "invoke"
+   "register"
+   `(,plugin
+     ,script
+     ( :platform "mac"
+       :host "vim"
+       :mode "debug"
+       :version "9.0.1649")
+     (:mode "skip")
+     :json-false)))
 
 (defun denops--logging (msg)
   "Logging MSG."
@@ -70,15 +86,28 @@
       (insert (current-time-string) " " msg)
       (newline))))
 
-(defun denops--send-string (str)
-  "Send STR to denops server."
-  (process-send-string denops--process str))
+(defun denops--send-notify (type command args)
+  "Send TYPE COMMAND with ARGS to denops server."
+  (let* ((sexp `(,denops--msgid (,type ,command ,args))))
+    (denops--send sexp))
+  (prog1 denops--msgid
+    (cl-incf denops--msgid)))
 
-(defun denops--process-filter (proc msg)
+
+;;; Low level functions
+
+(defun denops--send (sexp)
+  "Send json encoded SEXP to denops server."
+  (let* ((json (denops-json-encode sexp)))
+    (denops--logging (format "send(sexp): %S" sexp))
+    (denops--logging (format "send      : %s" json))
+    (process-send-string denops--process json)))
+
+(defun denops--process-filter (_proc msg)
   "Process output MSG from PROC."
   (denops--logging msg))
 
-(defun denops--process-sentinel (proc msg)
+(defun denops--process-sentinel (_proc msg)
   "Process MSG from PROC."
   (denops--logging (format "sentinel: %s" msg)))
 
@@ -96,8 +125,17 @@
            :family 'ipv4
            :filter #'denops--process-filter
            :sentinel #'denops--process-sentinel))
-    (denops--logging "start denops server"))
+    (denops--logging "start denops server")
+    (dolist (elm (denops--gather-plugins))
+      (denops--register (car elm) (cdr elm))))
   denops--buffer)
+
+(defun denops-stop-server ()
+  "Stop denops server."
+  (interactive)
+  (when (process-live-p denops--process)
+    (delete-process denops--process))
+  (denops--logging "stop denops server"))
 
 (provide 'denops)
 
