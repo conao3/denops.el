@@ -33,6 +33,55 @@
   :group 'convenience
   :link '(url-link :tag "Github" "https://github.com/conao3/denops.el"))
 
+(defcustom denops-server-host 'local
+  "Denops server host."
+  :type '(choice (const :tag "Local" local)
+                 (string :tag "Host")))
+
+(defcustom denops-server-port 50635
+  "Denops server port."
+  :type 'integer)
+
+(defvar denops--buffer nil)
+(defvar denops--process nil)
+(defvar denops--msgid 0)
+
+(defun denops--logging (msg)
+  "Logging MSG."
+  (with-current-buffer denops--buffer
+    (save-excursion
+      (goto-char (point-max))
+      (insert (current-time-string) " " msg)
+      (newline))))
+
+(defun denops--send-string (str)
+  "Send STR to denops server."
+  (process-send-string denops--process str))
+
+(defun denops--process-filter (proc msg)
+  "Process output MSG from PROC."
+  (denops--logging msg))
+
+(defun denops--process-sentinel (proc msg)
+  "Process MSG from PROC."
+  (denops--logging (format "sentinel: %s" msg)))
+
+(defun denops-start-server ()
+  "Start denops server."
+  (interactive)
+  (setq denops--buffer (get-buffer-create "*denops*"))
+  (setq denops--process
+        (make-network-process
+         :name "denops"
+         :buffer denops--buffer
+         :host denops-server-host
+         :service denops-server-port
+         :family 'ipv4
+         :filter #'denops--process-filter
+         :sentinel #'denops--process-sentinel))
+  (denops--logging "start denops server"))
+  denops--buffer)
+
 (provide 'denops)
 
 ;;; denops.el ends here
