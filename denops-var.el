@@ -44,5 +44,7 @@
 (defvar denops--process nil)
 (defvar denops--msgid 0)
 
+(defvar denops--current-buffer nil)
+
 (provide 'denops-var)
 ;;; denops-var.el ends here

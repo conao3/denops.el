@@ -28,7 +28,30 @@
 
 (defun denops-method--denops/api/cmd (args)
   "Call denops#api#cmd with ARGS."
-  (denops--logging (format "Not implemented: denops/api/cmd(%s)" args))
+  (let ((cmd (read (format "(%s)" (nth 0 args))))
+        (_context (nth 1 args)))
+    (pcase cmd
+      (`(enew)
+       (let ((buf (generate-new-buffer "*denops*")))
+         (pop-to-buffer buf)
+         (setq denops--current-buffer buf)))
+      (_
+       (denops--logging (format "Not implemented: denops/api/cmd %S" args)))))
+  0)
+
+(defun denops-method--setline (args)
+  "Call setline with ARGS."
+  (let ((lnum (nth 0 args))
+        (line (nth 1 args)))
+    (denops--logging (format "Current buffer: %s" (current-buffer)))
+    (with-current-buffer denops--current-buffer
+      (save-excursion
+        (goto-char (point-min))
+        (forward-line (1- lnum))
+        (delete-region (point) (line-end-position))
+        (dolist (elm (if (listp line) line (list line)))
+          (insert elm)
+          (newline)))))
   0)
 
 (provide 'denops-method)

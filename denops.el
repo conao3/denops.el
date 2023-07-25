@@ -46,7 +46,7 @@
        (setq fn-name (replace-regexp-in-string "#" "/" fn-name))
        (setq fn (symbol-function (intern (concat "denops-method--" fn-name))))
        (unless fn
-         (error "No such method: %s" fn-name))
+         (error "No such method: denops-method--%s" fn-name))
        (setq res (funcall fn args))
        (let ((result (plist-get res :result))
              (error (plist-get res :error)))
