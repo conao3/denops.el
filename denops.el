@@ -66,7 +66,7 @@
     (let ((sexp (json-read-from-string msg)))
       (denops--logging (format "recv      : %s" msg))
       (denops--logging (format "recv(sexp): %S" sexp))
-      (denops--response sexp))))
+      (denops--send (denops--response sexp)))))
 
 (defun denops--process-sentinel (_proc msg)
   "Process MSG from PROC."

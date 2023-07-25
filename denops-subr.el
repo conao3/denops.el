@@ -29,14 +29,15 @@
 
 (defun denops--send (sexp)
   "Send json encoded SEXP to denops server."
-  (let ((json (denops-json-encode sexp)))
-    (denops--logging (format "send(sexp): %S" sexp))
-    (denops--logging (format "send      : %s" json))
-    (process-send-string denops--process json)))
+  (denops--logging (format "send(sexp): %S" sexp))
+  (when sexp
+    (let ((json (denops-json-encode sexp)))
+      (denops--logging (format "send      : %s" json))
+      (process-send-string denops--process json))))
 
 (defun denops--send-notify (type command args)
   "Send TYPE COMMAND with ARGS to denops server."
-  (let* ((sexp `(,denops--msgid (,type ,command ,args))))
+  (let ((sexp `(,denops--msgid (,type ,command ,args))))
     (denops--send sexp))
   (prog1 denops--msgid
     (cl-incf denops--msgid)))

@@ -24,10 +24,12 @@
 
 ;;; Code:
 
+(require 'denops-subr)
+
 (defun denops-method--denops/api/cmd (args)
   "Call denops#api#cmd with ARGS."
-  )
-
+  (denops--logging (format "Not implemented: denops/api/cmd(%s)" args))
+  0)
 
 (provide 'denops-method)
 ;;; denops-method.el ends here
