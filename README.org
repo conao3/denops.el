@@ -2,14 +2,14 @@
 
 ** Usage
 
-Run denops server using port `50603`.
+Run denops server using port =50603=.
 #+begin_src bash
 deno run -q --no-lock --unstable -A /path/to/denops.vim/denops/@denops-private/cli.ts --port 50635
 #+end_src
 
-`M-x denops-start-server` to connect this server.
+=M-x denops-start-server= to connect this server.
 
-`denops--send-notify` to send command to denops server.
+=denops--send-notify= to send command to denops server.
 
 #+begin_src elisp
 (denops--send-notify "invoke" "dispatch" ["helloworld" "maze" []])
