@@ -29,83 +29,44 @@
 ;;; Code:
 
 (require 'denops-json)
+(require 'denops-method)
+(require 'denops-subr)
 
 (defgroup denops nil
   "Write package in Deno."
   :group 'convenience
   :link '(url-link :tag "Github" "https://github.com/conao3/denops.el"))
 
-(defcustom denops-server-host 'local
-  "Denops server host."
-  :type '(choice (const :tag "Local" local)
-                 (string :tag "Host")))
-
-(defcustom denops-server-port 50635
-  "Denops server port."
-  :type 'integer)
-
-(defcustom denops-load-path (list (locate-user-emacs-file "denops"))
-  "Denops load path."
-  :type '(repeat directory))
-
-(defvar denops--buffer nil)
-(defvar denops--process nil)
-(defvar denops--msgid 0)
-
-(defun denops--gather-plugins ()
-  "Gather plugins."
-  (let (res)
-    (dolist (dir denops-load-path)
-      (dolist (script (when (file-directory-p dir)
-                        (directory-files-recursively dir "main.ts")))
-        (save-match-data
-          (when (string-match "/denops/\\([^/]*\\)/main.ts$" script)
-            (let ((plugin (match-string 1 script)))
-              (push (cons plugin (file-truename script)) res))))))
-    (nreverse res)))
-
-(defun denops--register (plugin script)
-  "Register PLUGIN with SCRIPT."
-  (denops--send-notify
-   "invoke"
-   "register"
-   `(,plugin
-     ,script
-     ( :platform "mac"
-       :host "vim"
-       :mode "debug"
-       :version "9.0.1649")
-     (:mode "skip")
-     :json-false)))
-
-(defun denops--logging (msg)
-  "Logging MSG."
-  (with-current-buffer denops--buffer
-    (save-excursion
-      (goto-char (point-max))
-      (insert (current-time-string) " " msg)
-      (newline))))
-
-(defun denops--send-notify (type command args)
-  "Send TYPE COMMAND with ARGS to denops server."
-  (let* ((sexp `(,denops--msgid (,type ,command ,args))))
-    (denops--send sexp))
-  (prog1 denops--msgid
-    (cl-incf denops--msgid)))
+(defun denops--response (sexp)
+  "Process response SEXP."
+  (let (fn res)
+    (pcase sexp
+      (`("call" "denops#api#vim#call" (,fn-name ,args) ,msgid)
+       ;; # cannot use symbol without escape
+       (setq fn-name (replace-regexp-in-string "#" "/" fn-name))
+       (setq fn (symbol-function (intern (concat "denops-method--" fn-name))))
+       (unless fn
+         (error "No such method: %s" fn-name))
+       (setq res (funcall fn args))
+       (let ((result (plist-get res :result))
+             (error (plist-get res :error)))
+         (denops--logging (format "response: %s" res))
+         (when res
+           (if error
+               `(,msgid (,result ,error))
+             `(,msgid (,result "")))))))))
 
 
 ;;; Low level functions
 
-(defun denops--send (sexp)
-  "Send json encoded SEXP to denops server."
-  (let* ((json (denops-json-encode sexp)))
-    (denops--logging (format "send(sexp): %S" sexp))
-    (denops--logging (format "send      : %s" json))
-    (process-send-string denops--process json)))
-
 (defun denops--process-filter (_proc msg)
   "Process output MSG from PROC."
-  (denops--logging msg))
+  (let ((json-object-type 'plist)
+        (json-array-type 'list))
+    (let ((sexp (json-read-from-string msg)))
+      (denops--logging (format "recv      : %s" msg))
+      (denops--logging (format "recv(sexp): %S" sexp))
+      (denops--response sexp))))
 
 (defun denops--process-sentinel (_proc msg)
   "Process MSG from PROC."
@@ -127,7 +88,17 @@
            :sentinel #'denops--process-sentinel))
     (denops--logging "start denops server")
     (dolist (elm (denops--gather-plugins))
-      (denops--register (car elm) (cdr elm))))
+      (denops--send-notify
+       "invoke"
+       "register"
+       `(,(car elm)
+         ,(cdr elm)
+         ( :platform "mac"
+           :host "vim"
+           :mode "debug"
+           :version "9.0.1649")
+         (:mode "skip")
+         :json-false))))
   denops--buffer)
 
 (defun denops-stop-server ()
