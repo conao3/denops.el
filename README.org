@@ -1,26 +1,64 @@
 * denops.el
 
-** Usage
+Emacs client for [[https://github.com/vim-denops/denops.vim][denops.vim]], enabling you to use denops plugins from Emacs.
 
-Run denops server using port =50603=.
-#+begin_src bash
-deno run -q --no-lock --unstable -A /path/to/denops.vim/denops/@denops-private/cli.ts --port 50635
+[[https://github.com/vim-denops/denops.vim][Denops]] is an ecosystem for creating Vim/Neovim plugins using [[https://deno.land/][Deno]]. This package provides an Emacs interface to communicate with the denops server, allowing you to leverage denops plugins in your Emacs workflow.
+
+** Requirements
+
+- Emacs 26.1 or later
+- [[https://deno.land/][Deno]] runtime
+- [[https://github.com/vim-denops/denops.vim][denops.vim]] (for the server component)
+
+** Installation
+
+Clone this repository and add it to your load-path:
+
+#+begin_src elisp
+(add-to-list 'load-path "/path/to/denops.el")
+(require 'denops)
 #+end_src
 
-=M-x denops-start-server= to connect this server.
+** Usage
 
-=denops--send-notify= to send command to denops server.
+*** Starting the Denops Server
+
+First, start the denops server in a terminal:
+
+#+begin_src bash
+deno run -A /path/to/denops.vim/denops/@denops-private/cli.ts --port 50635
+#+end_src
+
+*** Connecting from Emacs
+
+Connect to the running server:
+
+#+begin_src elisp
+M-x denops-start-server
+#+end_src
+
+*** Calling Denops Plugins
+
+Use ~denops--send-notify~ to invoke denops plugin functions:
+
+#+begin_src elisp
+(denops--send-notify "invoke" "dispatch" ["plugin-name" "method" [args]])
+#+end_src
+
+Example:
 
 #+begin_src elisp
 (denops--send-notify "invoke" "dispatch" ["helloworld" "maze" []])
 #+end_src
 
 ** License
+
 #+begin_example
-  General Public License Version 3 (GPLv3)
-  Copyright (c) Naoya Yamashita - https://conao3.com
-  https://github.com/conao3/denops.el/blob/master/LICENSE
+General Public License Version 3 (GPLv3)
+Copyright (c) Naoya Yamashita - https://conao3.com
+https://github.com/conao3/denops.el/blob/master/LICENSE
 #+end_example
 
 ** Author
+
 - Naoya Yamashita ([[https://github.com/conao3][conao3]])
